@@ -1,13 +1,14 @@
-from emotion_recognition import EmotionRecognizer
-
-import pyaudio
 import os
+import time
 import wave
-from sys import byteorder
 from array import array
 from struct import pack
-from sklearn.ensemble import GradientBoostingClassifier, BaggingClassifier
+from sys import byteorder
 
+import pyaudio
+from sklearn.ensemble import BaggingClassifier, GradientBoostingClassifier
+
+from emotion_recognition import EmotionRecognizer
 from utils import get_best_estimators
 
 THRESHOLD = 500
@@ -150,14 +151,17 @@ if __name__ == "__main__":
 
     # Parse the arguments passed
     args = parser.parse_args()
+    print(f"args: {args}")
 
     features = ["mfcc", "chroma", "mel"]
-    detector = EmotionRecognizer(estimator_dict[args.model], emotions=args.emotions.split(","), features=features, verbose=0)
-    detector.train()
-    print("Test accuracy score: {:.3f}%".format(detector.test_score()*100))
-    print("Please talk")
+    detector = EmotionRecognizer(estimator_dict[args.model], emotions=args.emotions.split(","), features=features, verbose=1)
+    # detector.train()
+    # print("Test accuracy score: {:.3f}%".format(detector.test_score()*100))
     
-    filename = "test.wav"
-    record_to_file(filename)
-    result = detector.predict(filename)
-    print(result)
+    while True:
+        print("-"* 30 + " Please talk " + "-"*30)
+        filename = "tmp.wav"
+        record_to_file(filename)
+        result = detector.predict(filename)
+        print(result)
+        time.sleep(1)

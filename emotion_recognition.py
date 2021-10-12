@@ -1,19 +1,21 @@
-from data_extractor import load_data
-from utils import extract_feature, AVAILABLE_EMOTIONS
-from create_csv import write_emodb_csv, write_tess_ravdess_csv, write_custom_csv
-
-from sklearn.metrics import accuracy_score, make_scorer, fbeta_score, mean_squared_error, mean_absolute_error
-from sklearn.metrics import confusion_matrix
-from sklearn.model_selection import GridSearchCV
-
-import matplotlib.pyplot as pl
-from time import time
-from utils import get_best_estimators, get_audio_config
-import numpy as np
-import tqdm
 import os
 import random
+from time import time
+
+import matplotlib.pyplot as pl
+import numpy as np
 import pandas as pd
+import tqdm
+from sklearn.metrics import (accuracy_score, confusion_matrix, fbeta_score,
+                             make_scorer, mean_absolute_error,
+                             mean_squared_error)
+from sklearn.model_selection import GridSearchCV
+
+from create_csv import (write_custom_csv, write_emodb_csv,
+                        write_tess_ravdess_csv)
+from data_extractor import load_data
+from utils import (AVAILABLE_EMOTIONS, extract_feature, get_audio_config,
+                   get_best_estimators)
 
 
 class EmotionRecognizer:

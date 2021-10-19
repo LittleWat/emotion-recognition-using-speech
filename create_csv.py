@@ -1,6 +1,7 @@
 import glob
-import pandas as pd
 import os
+
+import pandas as pd
 
 
 def write_emodb_csv(emotions=["sad", "neutral", "happy"], train_name="train_emo.csv",
@@ -85,6 +86,49 @@ def write_tess_ravdess_csv(emotions=["sad", "neutral", "happy"], train_name="tra
             print(f"[TESS&RAVDESS] There are {len(total_files)} testing audio files for category:{category}")
     pd.DataFrame(test_target).to_csv(test_name)
     pd.DataFrame(train_target).to_csv(train_name)
+
+
+def write_seiyu_csv(emotions=["angry", "neutral", "happy"], train_name="train_seiyu.csv",
+                            test_name="test_seiyu.csv", verbose=1):
+    """
+    Reads speech TESS & RAVDESS datasets from directory and write it to a metadata CSV file.
+    params:
+        emotions (list): list of emotions to read from the folder, default is ["angry", "neutral", "happy"]
+        train_name (str): the output csv filename for training data, default is 'train_seiyu.csv'
+        test_name (str): the output csv filename for testing data, default is 'test_seiyu.csv'
+        verbose (int/bool): verbositiy level, 0 for silence, 1 for info, default is 1
+    """
+    train_target = {"path": [], "emotion": []}
+    test_target = {"path": [], "emotion": []}
+    
+    seiyus = ["fujitou", "tsuchiya", "uemura"]
+
+    emotion_map = {
+        "angry": "angry",
+        "neutral": "normal",
+        "happy": "happy"
+    }
+    supported_emotions =  list(filter(lambda x: x in emotion_map.keys(), emotions))
+    for emotion in supported_emotions:
+        # for training speech directory
+        for seiyu in seiyus:
+            total_files = sorted(glob.glob(f"data/seiyu/{seiyu}_{emotion_map[emotion]}/*.wav"))
+            n_train = int(len(total_files) * 0.8)
+            for i in range(n_train):
+                train_target["path"].append(total_files[i])
+                train_target["emotion"].append(emotion)
+            for i in range(n_train, len(total_files)):
+                test_target["path"].append(total_files[i])
+                test_target["emotion"].append(emotion)
+            
+    if verbose:
+        print(f"[SEIYU] There are {len(train_target['path'])} training audio files")
+        print(f"[SEIYU] There are {len(test_target['path'])} testing audio files")
+
+    pd.DataFrame(test_target).to_csv(test_name)
+    pd.DataFrame(train_target).to_csv(train_name)
+
+
 
 
 def write_custom_csv(emotions=['sad', 'neutral', 'happy'], train_name="train_custom.csv", test_name="test_custom.csv",

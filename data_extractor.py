@@ -1,12 +1,13 @@
 
+import os
+import pickle
+from collections import defaultdict
+
 import numpy as np
 import pandas as pd
-import pickle
 import tqdm
-import os
 
-from utils import get_label, extract_feature, get_first_letters
-from collections import defaultdict
+from utils import extract_feature, get_first_letters, get_label
 
 
 class AudioExtractor:
@@ -35,17 +36,20 @@ class AudioExtractor:
         self.input_dimension = None
 
     def _load_data(self, desc_files, partition, shuffle):
+        print(desc_files, partition, shuffle)
         self.load_metadata_from_desc_file(desc_files, partition)
         # balancing the datasets ( both training or testing )
-        if partition == "train" and self.balance:
-            self.balance_training_data()
-        elif partition == "test" and self.balance:
-            self.balance_testing_data()
-        else:
-            if self.balance:
-                raise TypeError("Invalid partition, must be either train/test")
-        if shuffle:
-            self.shuffle_data_by_partition(partition)
+        # self.balance = False
+        # self.shuffle = False
+        # if partition == "train" and self.balance:
+        #     self.balance_training_data()
+        # elif partition == "test" and self.balance:
+        #     self.balance_testing_data()
+        # else:
+        #     if self.balance:
+        #         raise TypeError("Invalid partition, must be either train/test")
+        # if shuffle:
+        #     self.shuffle_data_by_partition(partition)
 
     def load_train_data(self, desc_files=["train_speech.csv"], shuffle=False):
         """Loads training data from the metadata files `desc_files`"""
@@ -144,6 +148,10 @@ class AudioExtractor:
                 self.test_audio_paths += audio_paths
                 self.test_emotions += emotions
                 self.test_features = np.vstack((self.test_features, features))
+                print(f"self.test_audio_paths: {self.test_audio_paths}")
+                print(f"self.test_emotions: {self.test_emotions}")
+                print(f"self.test_features.shape: {self.test_features.shape}")
+                print("a"*100)
         else:
             raise TypeError("Invalid partition, must be either train/test")
 
@@ -237,6 +245,8 @@ def load_data(train_desc_files, test_desc_files, audio_config=None, classificati
     audiogen.load_train_data(train_desc_files, shuffle=shuffle)
     # Loads testing data
     audiogen.load_test_data(test_desc_files, shuffle=shuffle)
+
+    print(f"LEN(audiogen.test_emotions): {len(audiogen.test_emotions)}")
     # X_train, X_test, y_train, y_test
     return {
         "X_train": np.array(audiogen.train_features),

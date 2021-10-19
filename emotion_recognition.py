@@ -11,7 +11,7 @@ from sklearn.metrics import (accuracy_score, confusion_matrix, fbeta_score,
                              mean_squared_error)
 from sklearn.model_selection import GridSearchCV
 
-from create_csv import (write_custom_csv, write_emodb_csv,
+from create_csv import (write_custom_csv, write_emodb_csv, write_seiyu_csv,
                         write_tess_ravdess_csv)
 from data_extractor import load_data
 from utils import (AVAILABLE_EMOTIONS, extract_feature, get_audio_config,
@@ -56,6 +56,7 @@ class EmotionRecognizer:
         self.tess_ravdess = kwargs.get("tess_ravdess", True)
         self.emodb = kwargs.get("emodb", True)
         self.custom_db = kwargs.get("custom_db", True)
+        self.seiyu_db = kwargs.get("seiyu_db", True)
 
         if not self.tess_ravdess and not self.emodb and not self.custom_db:
             self.tess_ravdess = True
@@ -68,6 +69,7 @@ class EmotionRecognizer:
         self.tess_ravdess_name = kwargs.get("tess_ravdess_name", "tess_ravdess.csv")
         self.emodb_name = kwargs.get("emodb_name", "emodb.csv")
         self.custom_db_name = kwargs.get("custom_db_name", "custom.csv")
+        self.seiyu_db_name = kwargs.get("seiyu_db_name", "seiyu.csv")
 
         self.verbose = kwargs.get("verbose", 1)
 
@@ -81,7 +83,7 @@ class EmotionRecognizer:
         self.model_trained = False
 
         # model
-        if not model:
+        if model is None:
             self.determine_best_model()
         else:
             self.model = model
@@ -102,6 +104,9 @@ class EmotionRecognizer:
         if self.custom_db:
             train_desc_files.append(f"train_{self.custom_db_name}")
             test_desc_files.append(f"test_{self.custom_db_name}")
+        if self.seiyu_db:
+            train_desc_files.append(f"train_{self.seiyu_db_name}")
+            test_desc_files.append(f"test_{self.seiyu_db_name}")
 
         # set them to be object attributes
         self.train_desc_files = train_desc_files
@@ -141,6 +146,8 @@ class EmotionRecognizer:
                 write_custom_csv(emotions=self.emotions, train_name=train_csv_file, test_name=test_csv_file, verbose=self.verbose)
                 if self.verbose:
                     print("[+] Writed Custom DB CSV File")
+            elif self.seiyu_db_name in train_csv_file:
+                write_seiyu_csv(emotions=self.emotions, train_name=train_csv_file, test_name=test_csv_file, verbose=self.verbose)
 
     def load_data(self):
         """
@@ -179,7 +186,8 @@ class EmotionRecognizer:
         and predicts the emotion
         """
         feature = extract_feature(audio_path, **self.audio_config).reshape(1, -1)
-        return self.model.predict(feature)[0]
+        result = self.model.predict(feature)
+        return result[0]
 
     def predict_proba(self, audio_path):
         """

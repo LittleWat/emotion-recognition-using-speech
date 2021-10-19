@@ -1,3 +1,4 @@
+import argparse
 import os
 import time
 import wave
@@ -129,10 +130,7 @@ def get_estimators_name(estimators):
 
 
 
-if __name__ == "__main__":
-    estimators = get_best_estimators(True)
-    estimators_str, estimator_dict = get_estimators_name(estimators)
-    import argparse
+if __name__ == "__main__":   
     parser = argparse.ArgumentParser(description="""
                                     Testing emotion recognition system using your voice, 
                                     please consider changing the model and/or parameters as you wish.
@@ -141,27 +139,38 @@ if __name__ == "__main__":
                                             """Emotions to recognize separated by a comma ',', available emotions are
                                             "neutral", "calm", "happy" "sad", "angry", "fear", "disgust", "ps" (pleasant surprise)
                                             and "boredom", default is "sad,neutral,happy"
-                                            """, default="sad,neutral,happy")
+                                            """, default="angry,sad,neutral,ps,happy")
     parser.add_argument("-m", "--model", help=
                                         """
-                                        The model to use, 8 models available are: {},
-                                        default is "BaggingClassifier"
-                                        """.format(estimators_str), default="BaggingClassifier")
+                                        The model to use, 8 models available are
+                                        default is "GradientBoostingClassifier"
+                                        """, default="GradientBoostingClassifier")
 
 
     # Parse the arguments passed
     args = parser.parse_args()
     print(f"args: {args}")
 
+    estimators = get_best_estimators(True, emotions=args.emotions.split(","))
+    estimators_str, estimator_dict = get_estimators_name(estimators)
+
+    # print(f"estimators: {estimators}")
+    # print(f"estimators_str: {estimators_str}")
+    print(f"estimator_dict: {estimator_dict}")
+
     features = ["mfcc", "chroma", "mel"]
+    print(f"features: {features}")
     detector = EmotionRecognizer(estimator_dict[args.model], emotions=args.emotions.split(","), features=features, verbose=1)
-    # detector.train()
-    # print("Test accuracy score: {:.3f}%".format(detector.test_score()*100))
+    detector.train()
+    print("Test accuracy score: {:.3f}%".format(detector.test_score()*100))
     
     while True:
         print("-"* 30 + " Please talk " + "-"*30)
         filename = "tmp.wav"
         record_to_file(filename)
-        result = detector.predict(filename)
+        # result = detector.predict(filename)
+        print(detector.model)
+        result = detector.predict_proba(filename)
         print(result)
+        print(max(result.items(), key = lambda x:x[1])[0])
         time.sleep(1)

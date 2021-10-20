@@ -1,10 +1,11 @@
-import soundfile
+import os
+import pickle
+
 import librosa
 import numpy as np
-import pickle
-import os
-from convert_wavs import convert_audio
+import soundfile
 
+from convert_wavs import convert_audio
 
 AVAILABLE_EMOTIONS = {
     "neutral",
@@ -101,17 +102,18 @@ def extract_feature(file_name, **kwargs):
     return result
 
 
-def get_best_estimators(classification):
+def get_best_estimators(classification, emotions):
     """
     Loads the estimators that are pickled in `grid` folder
     Note that if you want to use different or more estimators,
     you can fine tune the parameters in `grid_search.py` script
     and run it again ( may take hours )
     """
+    emotion_str = "".join([emotion[0].upper() for emotion in sorted(emotions)])
     if classification:
-        return pickle.load(open("grid/best_classifiers.pickle", "rb"))
+        return pickle.load(open(f"grid/best_classifiers_{emotion_str}.pickle", "rb"))
     else:
-        return pickle.load(open("grid/best_regressors.pickle", "rb"))
+        return pickle.load(open(f"grid/best_regressors_{emotion_str}.pickle", "rb"))
 
 
 def get_audio_config(features_list):

@@ -10,9 +10,10 @@ from sklearn.metrics import (accuracy_score, confusion_matrix, fbeta_score,
                              make_scorer, mean_absolute_error,
                              mean_squared_error)
 from sklearn.model_selection import GridSearchCV
+from tensorflow.python.training import tracking
 
-from create_csv import (write_custom_csv, write_emodb_csv, write_seiyu_csv,
-                        write_tess_ravdess_csv)
+from create_csv import (write_custom_csv, write_emodb_csv, write_ogvc_vol2_csv,
+                        write_seiyu_csv, write_tess_ravdess_csv)
 from data_extractor import load_data
 from utils import (AVAILABLE_EMOTIONS, extract_feature, get_audio_config,
                    get_best_estimators)
@@ -108,6 +109,8 @@ class EmotionRecognizer:
             train_desc_files.append(f"train_{self.seiyu_db_name}")
             test_desc_files.append(f"test_{self.seiyu_db_name}")
 
+        test_desc_files.append("test_ogvc_vol2.csv")
+
         # set them to be object attributes
         self.train_desc_files = train_desc_files
         self.test_desc_files  = test_desc_files
@@ -121,7 +124,7 @@ class EmotionRecognizer:
 
     def get_best_estimators(self):
         """Loads estimators from grid files and returns them"""
-        return get_best_estimators(self.classification)
+        return get_best_estimators(self.classification, emotions=self.emotions)
 
     def write_csv(self):
         """
@@ -148,6 +151,13 @@ class EmotionRecognizer:
                     print("[+] Writed Custom DB CSV File")
             elif self.seiyu_db_name in train_csv_file:
                 write_seiyu_csv(emotions=self.emotions, train_name=train_csv_file, test_name=test_csv_file, verbose=self.verbose)
+                if self.verbose:
+                    print("[+] Writed Seiyu CSV File")
+
+        # always include ogvc test file
+        write_ogvc_vol2_csv(emotions=self.emotions, verbose=self.verbose)
+        if self.verbose:
+            print("[+] Writed OGVC vol2 CSV File")
 
     def load_data(self):
         """

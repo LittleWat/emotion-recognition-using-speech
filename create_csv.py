@@ -130,6 +130,51 @@ def write_seiyu_csv(emotions=["angry", "neutral", "happy"], train_name="train_se
 
 
 
+def write_ogvc_vol2_csv(emotions=["sad", "neutral", "happy"],
+                    test_name="test_ogvc_vol2.csv", verbose=1):
+    """
+    Reads speech emodb dataset from directory and write it to a metadata CSV file.
+    params:
+        emotions (list): list of emotions to read from the folder, default is ['sad', 'neutral', 'happy']
+        train_name (str): the output csv filename for training data, default is 'train_emo.csv'
+        test_name (str): the output csv filename for testing data, default is 'test_emo.csv'
+        train_size (float): the ratio of splitting training data, default is 0.8 (80% Training data and 20% testing data)
+        verbose (int/bool): verbositiy level, 0 for silence, 1 for info, default is 1
+    """
+    target = {"path": [], "emotion": []}
+    categories = {
+        "JOY": "happy",
+        "ACC": "happy",
+        "SUR": "ps",
+        "SAD": "sad",
+        "DIS": "disgust",
+        "ANG": "angry",
+        "ANT": "", # 該当するものがない。
+        "NEU": "neutral",
+    }
+    # delete not specified emotions
+    categories_reversed = { v: k for k, v in categories.items() }
+    for emotion, code in categories_reversed.items():
+        if emotion not in emotions:
+            del categories[code]
+    for file in glob.glob("data/OGVC_Vol2/Acted/wav/*/*/*.wav"):
+        try:
+            emotion = categories[os.path.basename(file)[7:10]]
+        except KeyError:
+            continue
+        target['emotion'].append(emotion)
+        target['path'].append(file)
+    if verbose:
+        print("[OGVC_vol2] Total files to write:", len(target['path']))
+        
+    # just for tests
+    test_size = len(target['path'])
+    if verbose:
+        print("[OGVC_vol2] Testing samples:", test_size)   
+    X_test = target['path']
+    y_test = target['emotion']
+    pd.DataFrame({"path": X_test, "emotion": y_test}).to_csv(test_name)
+
 
 def write_custom_csv(emotions=['sad', 'neutral', 'happy'], train_name="train_custom.csv", test_name="test_custom.csv",
                     verbose=1):

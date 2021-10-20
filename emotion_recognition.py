@@ -13,7 +13,8 @@ from sklearn.model_selection import GridSearchCV
 from tensorflow.python.training import tracking
 
 from create_csv import (write_custom_csv, write_emodb_csv, write_ogvc_vol2_csv,
-                        write_seiyu_csv, write_tess_ravdess_csv)
+                        write_savee_csv, write_seiyu_csv,
+                        write_tess_ravdess_csv)
 from data_extractor import load_data
 from utils import (AVAILABLE_EMOTIONS, extract_feature, get_audio_config,
                    get_best_estimators)
@@ -58,6 +59,7 @@ class EmotionRecognizer:
         self.emodb = kwargs.get("emodb", True)
         self.custom_db = kwargs.get("custom_db", True)
         self.seiyu_db = kwargs.get("seiyu_db", True)
+        self.savee_db = kwargs.get("savee_db", True)
 
         if not self.tess_ravdess and not self.emodb and not self.custom_db:
             self.tess_ravdess = True
@@ -71,6 +73,7 @@ class EmotionRecognizer:
         self.emodb_name = kwargs.get("emodb_name", "emodb.csv")
         self.custom_db_name = kwargs.get("custom_db_name", "custom.csv")
         self.seiyu_db_name = kwargs.get("seiyu_db_name", "seiyu.csv")
+        self.savee_db_name = kwargs.get("savee_db_name", "savee.csv")
 
         self.verbose = kwargs.get("verbose", 1)
 
@@ -108,6 +111,9 @@ class EmotionRecognizer:
         if self.seiyu_db:
             train_desc_files.append(f"train_{self.seiyu_db_name}")
             test_desc_files.append(f"test_{self.seiyu_db_name}")
+        if self.savee_db:
+            train_desc_files.append(f"train_{self.savee_db_name}")
+            test_desc_files.append(f"test_{self.savee_db_name}")
 
         test_desc_files.append("test_ogvc_vol2.csv")
 
@@ -153,6 +159,10 @@ class EmotionRecognizer:
                 write_seiyu_csv(emotions=self.emotions, train_name=train_csv_file, test_name=test_csv_file, verbose=self.verbose)
                 if self.verbose:
                     print("[+] Writed Seiyu CSV File")
+            elif self.savee_db_name in train_csv_file:
+                write_savee_csv(emotions=self.emotions, train_name=train_csv_file, test_name=test_csv_file, verbose=self.verbose)
+                if self.verbose:
+                    print("[+] Writed SAVEE CSV File")
 
         # always include ogvc test file
         write_ogvc_vol2_csv(emotions=self.emotions, verbose=self.verbose)

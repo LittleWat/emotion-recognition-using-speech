@@ -129,6 +129,58 @@ def write_seiyu_csv(emotions=["angry", "neutral", "happy"], train_name="train_se
     pd.DataFrame(train_target).to_csv(train_name)
 
 
+def write_savee_csv(emotions=["sad", "neutral", "happy"], train_name="train_savee.csv",
+                    test_name="test_savee.csv", train_size=0.8, verbose=1):
+    """
+    Reads speech savee dataset from directory and write it to a metadata CSV file.
+    params:
+        emotions (list): list of emotions to read from the folder, default is ['sad', 'neutral', 'happy']
+        train_name (str): the output csv filename for training data, default is 'train_emo.csv'
+        test_name (str): the output csv filename for testing data, default is 'test_emo.csv'
+        train_size (float): the ratio of splitting training data, default is 0.8 (80% Training data and 20% testing data)
+        verbose (int/bool): verbositiy level, 0 for silence, 1 for info, default is 1
+    """
+
+    target = {"path": [], "emotion": []}
+
+    categories = {
+        "_a": "angry",
+        "_d": "disgust",
+        "_f": "fear",
+        "_h": "happy",
+        "_n": "neutral",
+        "sa": "sad",
+        "su": "ps"
+    }
+
+    # delete not specified emotions
+    categories_reversed = { v: k for k, v in categories.items() }
+    for emotion, code in categories_reversed.items():
+        if emotion not in emotions:
+            del categories[code]
+    for file in glob.glob("data/savee/*.wav"):
+        try:
+            emotion = categories[os.path.basename(file)[-8:-6]]
+        except KeyError:
+            continue
+        target['emotion'].append(emotion)
+        target['path'].append(file)
+    if verbose:
+        print("[SAVEE] Total files to write:", len(target['path']))
+        
+    # dividing training/testing sets
+    n_samples = len(target['path'])
+    test_size = int((1-train_size) * n_samples)
+    train_size = int(train_size * n_samples)
+    if verbose:
+        print("[SAVEE] Training samples:", train_size)
+        print("[SAVEE] Testing samples:", test_size)   
+    X_train = target['path'][:train_size]
+    X_test = target['path'][train_size:]
+    y_train = target['emotion'][:train_size]
+    y_test = target['emotion'][train_size:]
+    pd.DataFrame({"path": X_train, "emotion": y_train}).to_csv(train_name)
+    pd.DataFrame({"path": X_test, "emotion": y_test}).to_csv(test_name)
 
 def write_ogvc_vol2_csv(emotions=["sad", "neutral", "happy"],
                     test_name="test_ogvc_vol2.csv", verbose=1):

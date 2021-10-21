@@ -182,6 +182,60 @@ def write_savee_csv(emotions=["sad", "neutral", "happy"], train_name="train_save
     pd.DataFrame({"path": X_train, "emotion": y_train}).to_csv(train_name)
     pd.DataFrame({"path": X_test, "emotion": y_test}).to_csv(test_name)
 
+
+def write_crema_d_csv(emotions=["sad", "neutral", "happy"], train_name="train_crema_d.csv",
+                    test_name="test_crema_d.csv", train_size=0.8, verbose=1):
+    """
+    Reads speech crema_d dataset from directory and write it to a metadata CSV file.
+    params:
+        emotions (list): list of emotions to read from the folder, default is ['sad', 'neutral', 'happy']
+        train_name (str): the output csv filename for training data, default is 'train_emo.csv'
+        test_name (str): the output csv filename for testing data, default is 'test_emo.csv'
+        train_size (float): the ratio of splitting training data, default is 0.8 (80% Training data and 20% testing data)
+        verbose (int/bool): verbositiy level, 0 for silence, 1 for info, default is 1
+    """
+
+    target = {"path": [], "emotion": []}
+
+    categories = {
+        "ANG": "angry",
+        "DIS": "disgust",
+        "FEA": "fear",
+        "HAP": "happy",
+        "NEU": "neutral",
+        "SAD": "sad",
+    }
+
+    # delete not specified emotions
+    categories_reversed = { v: k for k, v in categories.items() }
+    for emotion, code in categories_reversed.items():
+        if emotion not in emotions:
+            del categories[code]
+    for file in glob.glob("data/crema-d/*.wav"):
+        try:
+            category = os.path.basename(file).split("_")[2]
+            emotion = categories[category]
+        except KeyError:
+            continue
+        target['emotion'].append(emotion)
+        target['path'].append(file)
+    if verbose:
+        print("[CREMA-D] Total files to write:", len(target['path']))
+        
+    # dividing training/testing sets
+    n_samples = len(target['path'])
+    test_size = int((1-train_size) * n_samples)
+    train_size = int(train_size * n_samples)
+    if verbose:
+        print("[CREMA-D] Training samples:", train_size)
+        print("[CREMA-D] Testing samples:", test_size)   
+    X_train = target['path'][:train_size]
+    X_test = target['path'][train_size:]
+    y_train = target['emotion'][:train_size]
+    y_test = target['emotion'][train_size:]
+    pd.DataFrame({"path": X_train, "emotion": y_train}).to_csv(train_name)
+    pd.DataFrame({"path": X_test, "emotion": y_test}).to_csv(test_name)
+
 def write_ogvc_vol2_csv(emotions=["sad", "neutral", "happy"],
                     test_name="test_ogvc_vol2.csv", verbose=1):
     """

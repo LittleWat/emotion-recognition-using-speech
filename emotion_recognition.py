@@ -16,8 +16,9 @@ from create_csv import (write_crema_d_csv, write_custom_csv, write_emodb_csv,
                         write_ogvc_vol2_csv, write_savee_csv, write_seiyu_csv,
                         write_tess_ravdess_csv)
 from data_extractor import load_data
-from utils import (AVAILABLE_EMOTIONS, extract_feature, get_audio_config,
-                   get_best_estimators)
+from utils import (AVAILABLE_EMOTIONS, audiosegment_to_librosawav,
+                   extract_feature, extract_features_from_array,
+                   get_audio_config, get_best_estimators)
 
 
 class EmotionRecognizer:
@@ -231,6 +232,18 @@ class EmotionRecognizer:
             return result
         else:
             raise NotImplementedError("Probability prediction doesn't make sense for regression")
+
+    def predict_proba_by_audio_segment(self, audio_segment):
+        """
+        Predicts the probability of each emotion.
+        """
+        arr = audiosegment_to_librosawav(audio_segment)
+        feature = extract_features_from_array(arr, audio_segment.frame_rate, **self.audio_config).reshape(1, -1)
+        proba = self.model.predict_proba(feature)[0]
+        result = {}
+        for emotion, prob in zip(self.model.classes_, proba):
+            result[emotion] = prob
+        return result
 
     def grid_search(self, params, n_jobs=2, verbose=1):
         """

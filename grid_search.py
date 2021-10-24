@@ -16,7 +16,8 @@ from parameters import (classification_grid_parameters,
 
 # emotion classes you want to perform grid search on
 # emotions = ['sad', 'neutral', 'happy']
-emotions = ['angry', 'sad', 'neutral', 'ps', 'happy']
+# emotions = ['angry', 'sad', 'neutral', 'ps', 'happy']
+emotions = ['angry', 'disgust', 'sad', 'neutral', 'ps', 'happy']
 
 # number of parallel jobs during the grid search
 n_jobs = 4

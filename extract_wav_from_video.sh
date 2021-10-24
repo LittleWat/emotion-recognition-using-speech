@@ -1,0 +1,1 @@
+ffmpeg -i このハゲ〜！-btUZ0CglhFY.mp4 -vn -ac 1 -ar 16000 -ab 768k mayuko_all.wav

@@ -22,6 +22,7 @@ from tqdm import tqdm
 from emotion_recognition import EmotionRecognizer
 from utils import extract_features_from_array, get_best_estimators
 
+MIN_SPEECH_MILLISECONDS = 200
 
 @dataclass
 class EmotionItem:
@@ -38,16 +39,13 @@ def main():
     args = parse_args()
 
     myaudio = AudioSegment.from_wav(args.input_filename)
-    silences = silence.detect_silence(myaudio, min_silence_len=300, silence_thresh=-30)
+    silences = silence.detect_silence(myaudio, min_silence_len=200, silence_thresh=-30)
+    print(f"silences: {silences}")
     core_filename =  os.path.splitext(os.path.basename(args.input_filename))[0]
     outdir = os.path.join(args.output_dir, core_filename)
     shutil.rmtree(outdir, ignore_errors=True)
     os.makedirs(outdir, exist_ok=True)
     
-    sample_rate = myaudio.frame_rate
-    next_start = 0
-
-
     estimators = get_best_estimators(True, emotions=args.emotions.split(","))
     estimators_str, estimator_dict = get_estimators_name(estimators)
     print(f"estimator_dict: {estimator_dict}")
@@ -56,13 +54,18 @@ def main():
     detector = EmotionRecognizer(estimator_dict[args.model], emotions=args.emotions.split(","), features=features, verbose=1)
 
     emotion_items = []
+    next_start = 0
     for i, a_silence in enumerate(silences):
-        split_sound = myaudio[next_start:a_silence[0]]
-        output_filename = os.path.join(outdir, f"{core_filename}_{i:03}.wav")
-        split_sound.export(output_filename, format="wav")
+        diff = a_silence[0] - next_start
+        if diff > MIN_SPEECH_MILLISECONDS:
+            split_sound = myaudio[next_start:a_silence[0]]
+            output_filename = os.path.join(outdir, f"{core_filename}_{i:03}.wav")
+            split_sound.export(output_filename, format="wav")
 
-        pred = detector.predict_proba_by_audio_segment(split_sound)
-        emotion_items.append(EmotionItem(next_start, a_silence[0], pred))
+            pred = detector.predict_proba_by_audio_segment(split_sound)
+            emotion_items.append(EmotionItem(next_start, a_silence[0], pred))
+        else:
+            print(f"diff was small: {diff}")
 
         next_start = a_silence[1]
         
@@ -75,7 +78,7 @@ def parse_args():
                                     please consider changing the model and/or parameters as you wish.
                                     """)
     parser.add_argument("input_filename") 
-    parser.add_argument("-o", "--output_dir", default="split_wavs")
+    parser.add_argument("-o", "--output_dir", default="emotion_prediction_results")
     parser.add_argument("-e", "--emotions", help=
                                             """Emotions to recognize separated by a comma ',', available emotions are
                                             "neutral", "calm", "happy" "sad", "angry", "fear", "disgust", "ps" (pleasant surprise)
@@ -123,20 +126,17 @@ def generate_movie(emotion_items: List[EmotionItem], total_millisec: int, input_
 
     print(f"len(frames): {len(frames)}")
 
-    with open(output_mp4name.replace(".mp4",".pickle"), "wb") as f:
-        pickle.dump(frames, f)
-
     ani = animation.ArtistAnimation(fig, frames, interval=span,blit=True)
     tmp_output_mp4name = output_mp4name + ".tmp.mp4"
     ani.save(tmp_output_mp4name)
 
-    print(f"{tmp_output_mp4name} was generated!!!") 
+    print(f"{tmp_output_mp4name} was generated!!!")
     subprocess.call(f"ffmpeg -y -i {tmp_output_mp4name} -i {input_wavname} -c:v copy -c:a aac {output_mp4name}", shell=True)
     print(f"{output_mp4name} was generated!!!")
 
     os.remove(tmp_output_mp4name)
-    print(f"{tmp_output_mp4name} was removed!!!") 
+    print(f"{tmp_output_mp4name} was removed!!!")
 
 
-if __name__ == "__main__":   
+if __name__ == "__main__":
     main()

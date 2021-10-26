@@ -10,6 +10,8 @@ logs
 grid
 *.csv
 *.wav
+*.mp4
+emotion_prediction_results
 
 ## PYTHON ##
 *.ipynb

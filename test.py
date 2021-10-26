@@ -139,7 +139,7 @@ if __name__ == "__main__":
                                             """Emotions to recognize separated by a comma ',', available emotions are
                                             "neutral", "calm", "happy" "sad", "angry", "fear", "disgust", "ps" (pleasant surprise)
                                             and "boredom", default is "sad,neutral,happy"
-                                            """, default="angry,sad,neutral,ps,happy")
+                                            """, default="angry,disgust,sad,neutral,ps,happy")
     parser.add_argument("-m", "--model", help=
                                         """
                                         The model to use, 8 models available are
@@ -161,8 +161,8 @@ if __name__ == "__main__":
     features = ["mfcc", "chroma", "mel"]
     print(f"features: {features}")
     detector = EmotionRecognizer(estimator_dict[args.model], emotions=args.emotions.split(","), features=features, verbose=1)
-    detector.train()
-    print("Test accuracy score: {:.3f}%".format(detector.test_score()*100))
+    # detector.train()
+    # print("Test accuracy score: {:.3f}%".format(detector.test_score()*100))
     
     while True:
         print("-"* 30 + " Please talk " + "-"*30)

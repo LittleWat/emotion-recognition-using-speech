@@ -1,26 +1,29 @@
 import os
 # disable keras loggings
 import sys
+
 stderr = sys.stderr
 sys.stderr = open(os.devnull, 'w')
-import tensorflow as tf
-
-from tensorflow.keras.layers import LSTM, GRU, Dense, Activation, LeakyReLU, Dropout
-from tensorflow.keras.layers import Conv1D, MaxPool1D, GlobalAveragePooling1D
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.callbacks import ModelCheckpoint, TensorBoard
-from tensorflow.keras.utils import to_categorical
-
-from sklearn.metrics import accuracy_score, mean_absolute_error, confusion_matrix
-
-from data_extractor import load_data
-from create_csv import write_custom_csv, write_emodb_csv, write_tess_ravdess_csv
-from emotion_recognition import EmotionRecognizer
-from utils import get_first_letters, AVAILABLE_EMOTIONS, extract_feature, get_dropout_str
+import random
 
 import numpy as np
 import pandas as pd
-import random
+import tensorflow as tf
+from sklearn.metrics import (accuracy_score, confusion_matrix,
+                             mean_absolute_error)
+from tensorflow.keras.callbacks import ModelCheckpoint, TensorBoard
+from tensorflow.keras.layers import (GRU, LSTM, Activation, Conv1D, Dense,
+                                     Dropout, GlobalAveragePooling1D,
+                                     LeakyReLU, MaxPool1D)
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.utils import to_categorical
+
+from create_csv import (write_custom_csv, write_emodb_csv,
+                        write_tess_ravdess_csv)
+from data_extractor import load_data
+from emotion_recognition import EmotionRecognizer
+from utils import (AVAILABLE_EMOTIONS, extract_feature, get_dropout_str,
+                   get_first_letters)
 
 
 class DeepEmotionRecognizer(EmotionRecognizer):
@@ -288,7 +291,10 @@ class DeepEmotionRecognizer(EmotionRecognizer):
         y_test = self.y_test[0]
         if self.classification:
             y_pred = self.model.predict_classes(self.X_test)[0]
+            # print(y_pred)
+            # print(f"y_pred.shape: {y_pred.shape}")
             y_test = [np.argmax(y, out=None, axis=None) for y in y_test]
+            print(y_test)
             return accuracy_score(y_true=y_test, y_pred=y_pred)
         else:
             y_pred = self.model.predict(self.X_test)[0]

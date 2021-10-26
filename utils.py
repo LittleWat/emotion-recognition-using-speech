@@ -1,10 +1,11 @@
-import soundfile
+import os
+import pickle
+
 import librosa
 import numpy as np
-import pickle
-import os
-from convert_wavs import convert_audio
+import soundfile
 
+from convert_wavs import convert_audio
 
 AVAILABLE_EMOTIONS = {
     "neutral",
@@ -56,11 +57,6 @@ def extract_feature(file_name, **kwargs):
         e.g:
         `features = extract_feature(path, mel=True, mfcc=True)`
     """
-    mfcc = kwargs.get("mfcc")
-    chroma = kwargs.get("chroma")
-    mel = kwargs.get("mel")
-    contrast = kwargs.get("contrast")
-    tonnetz = kwargs.get("tonnetz")
     try:
         with soundfile.SoundFile(file_name) as sound_file:
             pass
@@ -80,38 +76,58 @@ def extract_feature(file_name, **kwargs):
     with soundfile.SoundFile(new_filename) as sound_file:
         X = sound_file.read(dtype="float32")
         sample_rate = sound_file.samplerate
-        if chroma or contrast:
-            stft = np.abs(librosa.stft(X))
-        result = np.array([])
-        if mfcc:
-            mfccs = np.mean(librosa.feature.mfcc(y=X, sr=sample_rate, n_mfcc=40).T, axis=0)
-            result = np.hstack((result, mfccs))
-        if chroma:
-            chroma = np.mean(librosa.feature.chroma_stft(S=stft, sr=sample_rate).T,axis=0)
-            result = np.hstack((result, chroma))
-        if mel:
-            mel = np.mean(librosa.feature.melspectrogram(X, sr=sample_rate).T,axis=0)
-            result = np.hstack((result, mel))
-        if contrast:
-            contrast = np.mean(librosa.feature.spectral_contrast(S=stft, sr=sample_rate).T,axis=0)
-            result = np.hstack((result, contrast))
-        if tonnetz:
-            tonnetz = np.mean(librosa.feature.tonnetz(y=librosa.effects.harmonic(X), sr=sample_rate).T,axis=0)
-            result = np.hstack((result, tonnetz))
+        result = extract_features_from_array(X, sample_rate, **kwargs)
     return result
 
+def extract_features_from_array(arr, sample_rate, **kwargs):
+    mfcc = kwargs.get("mfcc")
+    chroma = kwargs.get("chroma")
+    mel = kwargs.get("mel")
+    contrast = kwargs.get("contrast")
+    tonnetz = kwargs.get("tonnetz")
 
-def get_best_estimators(classification):
+    if chroma or contrast:
+        stft = np.abs(librosa.stft(arr))
+    result = np.array([])
+    if mfcc:
+        mfccs = np.mean(librosa.feature.mfcc(y=arr, sr=sample_rate, n_mfcc=40).T, axis=0)
+        result = np.hstack((result, mfccs))
+    if chroma:
+        chroma = np.mean(librosa.feature.chroma_stft(S=stft, sr=sample_rate).T,axis=0)
+        result = np.hstack((result, chroma))
+    if mel:
+        mel = np.mean(librosa.feature.melspectrogram(arr, sr=sample_rate).T,axis=0)
+        result = np.hstack((result, mel))
+    if contrast:
+        contrast = np.mean(librosa.feature.spectral_contrast(S=stft, sr=sample_rate).T,axis=0)
+        result = np.hstack((result, contrast))
+    if tonnetz:
+        tonnetz = np.mean(librosa.feature.tonnetz(y=librosa.effects.harmonic(arr), sr=sample_rate).T,axis=0)
+        result = np.hstack((result, tonnetz))
+    return result
+
+def audiosegment_to_librosawav(audiosegment):    
+    channel_sounds = audiosegment.split_to_mono()
+    samples = [s.get_array_of_samples() for s in channel_sounds]
+
+    fp_arr = np.array(samples).T.astype(np.float32)
+    fp_arr /= np.iinfo(samples[0].typecode).max
+    fp_arr = fp_arr.reshape(-1)
+
+    return fp_arr
+
+def get_best_estimators(classification, emotions):
     """
     Loads the estimators that are pickled in `grid` folder
     Note that if you want to use different or more estimators,
     you can fine tune the parameters in `grid_search.py` script
     and run it again ( may take hours )
     """
+    emotion_str = "".join([emotion[0].upper() for emotion in sorted(emotions)])
     if classification:
-        return pickle.load(open("grid/best_classifiers.pickle", "rb"))
+        return pickle.load(open(f"grid/best_classifiers_{emotion_str}.pickle", "rb"))
     else:
-        return pickle.load(open("grid/best_regressors.pickle", "rb"))
+        return pickle.load(open(f"grid/best_regressors_{emotion_str}.pickle", "rb"))
 
 
 def get_audio_config(features_list):

@@ -1,6 +1,7 @@
 import glob
-import pandas as pd
 import os
+
+import pandas as pd
 
 
 def write_emodb_csv(emotions=["sad", "neutral", "happy"], train_name="train_emo.csv",
@@ -85,6 +86,200 @@ def write_tess_ravdess_csv(emotions=["sad", "neutral", "happy"], train_name="tra
             print(f"[TESS&RAVDESS] There are {len(total_files)} testing audio files for category:{category}")
     pd.DataFrame(test_target).to_csv(test_name)
     pd.DataFrame(train_target).to_csv(train_name)
+
+
+def write_seiyu_csv(emotions=["angry", "neutral", "happy"], train_name="train_seiyu.csv",
+                            test_name="test_seiyu.csv", verbose=1):
+    """
+    Reads speech TESS & RAVDESS datasets from directory and write it to a metadata CSV file.
+    params:
+        emotions (list): list of emotions to read from the folder, default is ["angry", "neutral", "happy"]
+        train_name (str): the output csv filename for training data, default is 'train_seiyu.csv'
+        test_name (str): the output csv filename for testing data, default is 'test_seiyu.csv'
+        verbose (int/bool): verbositiy level, 0 for silence, 1 for info, default is 1
+    """
+    train_target = {"path": [], "emotion": []}
+    test_target = {"path": [], "emotion": []}
+    
+    seiyus = ["fujitou", "tsuchiya", "uemura"]
+
+    emotion_map = {
+        "angry": "angry",
+        "neutral": "normal",
+        "happy": "happy"
+    }
+    supported_emotions =  list(filter(lambda x: x in emotion_map.keys(), emotions))
+    for emotion in supported_emotions:
+        # for training speech directory
+        for seiyu in seiyus:
+            total_files = sorted(glob.glob(f"data/seiyu/{seiyu}_{emotion_map[emotion]}/*.wav"))
+            n_train = int(len(total_files) * 0.8)
+            for i in range(n_train):
+                train_target["path"].append(total_files[i])
+                train_target["emotion"].append(emotion)
+            for i in range(n_train, len(total_files)):
+                test_target["path"].append(total_files[i])
+                test_target["emotion"].append(emotion)
+            
+    if verbose:
+        print(f"[SEIYU] There are {len(train_target['path'])} training audio files")
+        print(f"[SEIYU] There are {len(test_target['path'])} testing audio files")
+
+    pd.DataFrame(test_target).to_csv(test_name)
+    pd.DataFrame(train_target).to_csv(train_name)
+
+
+def write_savee_csv(emotions=["sad", "neutral", "happy"], train_name="train_savee.csv",
+                    test_name="test_savee.csv", train_size=0.8, verbose=1):
+    """
+    Reads speech savee dataset from directory and write it to a metadata CSV file.
+    params:
+        emotions (list): list of emotions to read from the folder, default is ['sad', 'neutral', 'happy']
+        train_name (str): the output csv filename for training data, default is 'train_emo.csv'
+        test_name (str): the output csv filename for testing data, default is 'test_emo.csv'
+        train_size (float): the ratio of splitting training data, default is 0.8 (80% Training data and 20% testing data)
+        verbose (int/bool): verbositiy level, 0 for silence, 1 for info, default is 1
+    """
+
+    target = {"path": [], "emotion": []}
+
+    categories = {
+        "_a": "angry",
+        "_d": "disgust",
+        "_f": "fear",
+        "_h": "happy",
+        "_n": "neutral",
+        "sa": "sad",
+        "su": "ps"
+    }
+
+    # delete not specified emotions
+    categories_reversed = { v: k for k, v in categories.items() }
+    for emotion, code in categories_reversed.items():
+        if emotion not in emotions:
+            del categories[code]
+    for file in glob.glob("data/savee/*.wav"):
+        try:
+            emotion = categories[os.path.basename(file)[-8:-6]]
+        except KeyError:
+            continue
+        target['emotion'].append(emotion)
+        target['path'].append(file)
+    if verbose:
+        print("[SAVEE] Total files to write:", len(target['path']))
+        
+    # dividing training/testing sets
+    n_samples = len(target['path'])
+    test_size = int((1-train_size) * n_samples)
+    train_size = int(train_size * n_samples)
+    if verbose:
+        print("[SAVEE] Training samples:", train_size)
+        print("[SAVEE] Testing samples:", test_size)   
+    X_train = target['path'][:train_size]
+    X_test = target['path'][train_size:]
+    y_train = target['emotion'][:train_size]
+    y_test = target['emotion'][train_size:]
+    pd.DataFrame({"path": X_train, "emotion": y_train}).to_csv(train_name)
+    pd.DataFrame({"path": X_test, "emotion": y_test}).to_csv(test_name)
+
+
+def write_crema_d_csv(emotions=["sad", "neutral", "happy"], train_name="train_crema_d.csv",
+                    test_name="test_crema_d.csv", train_size=0.8, verbose=1):
+    """
+    Reads speech crema_d dataset from directory and write it to a metadata CSV file.
+    params:
+        emotions (list): list of emotions to read from the folder, default is ['sad', 'neutral', 'happy']
+        train_name (str): the output csv filename for training data, default is 'train_emo.csv'
+        test_name (str): the output csv filename for testing data, default is 'test_emo.csv'
+        train_size (float): the ratio of splitting training data, default is 0.8 (80% Training data and 20% testing data)
+        verbose (int/bool): verbositiy level, 0 for silence, 1 for info, default is 1
+    """
+
+    target = {"path": [], "emotion": []}
+
+    categories = {
+        "ANG": "angry",
+        "DIS": "disgust",
+        "FEA": "fear",
+        "HAP": "happy",
+        "NEU": "neutral",
+        "SAD": "sad",
+    }
+
+    # delete not specified emotions
+    categories_reversed = { v: k for k, v in categories.items() }
+    for emotion, code in categories_reversed.items():
+        if emotion not in emotions:
+            del categories[code]
+    for file in glob.glob("data/crema-d/*.wav"):
+        try:
+            category = os.path.basename(file).split("_")[2]
+            emotion = categories[category]
+        except KeyError:
+            continue
+        target['emotion'].append(emotion)
+        target['path'].append(file)
+    if verbose:
+        print("[CREMA-D] Total files to write:", len(target['path']))
+        
+    # dividing training/testing sets
+    n_samples = len(target['path'])
+    test_size = int((1-train_size) * n_samples)
+    train_size = int(train_size * n_samples)
+    if verbose:
+        print("[CREMA-D] Training samples:", train_size)
+        print("[CREMA-D] Testing samples:", test_size)   
+    X_train = target['path'][:train_size]
+    X_test = target['path'][train_size:]
+    y_train = target['emotion'][:train_size]
+    y_test = target['emotion'][train_size:]
+    pd.DataFrame({"path": X_train, "emotion": y_train}).to_csv(train_name)
+    pd.DataFrame({"path": X_test, "emotion": y_test}).to_csv(test_name)
+
+def write_ogvc_vol2_csv(emotions=["sad", "neutral", "happy"],
+                    test_name="test_ogvc_vol2.csv", verbose=1):
+    """
+    Reads speech emodb dataset from directory and write it to a metadata CSV file.
+    params:
+        emotions (list): list of emotions to read from the folder, default is ['sad', 'neutral', 'happy']
+        train_name (str): the output csv filename for training data, default is 'train_emo.csv'
+        test_name (str): the output csv filename for testing data, default is 'test_emo.csv'
+        train_size (float): the ratio of splitting training data, default is 0.8 (80% Training data and 20% testing data)
+        verbose (int/bool): verbositiy level, 0 for silence, 1 for info, default is 1
+    """
+    target = {"path": [], "emotion": []}
+    categories = {
+        "JOY": "happy",
+        "ACC": "happy",
+        "SUR": "ps",
+        "SAD": "sad",
+        "DIS": "disgust",
+        "ANG": "angry",
+        "ANT": "", # 該当するものがない。
+        "NEU": "neutral",
+    }
+    # delete not specified emotions
+    categories_reversed = { v: k for k, v in categories.items() }
+    for emotion, code in categories_reversed.items():
+        if emotion not in emotions:
+            del categories[code]
+    for file in glob.glob("data/OGVC_Vol2/Acted/wav/*/*/*.wav"):
+        try:
+            emotion = categories[os.path.basename(file)[7:10]]
+        except KeyError:
+            continue
+        target['emotion'].append(emotion)
+        target['path'].append(file)
+    if verbose:
+        print("[OGVC_vol2] Total files to write:", len(target['path']))
+        
+    # just for tests
+    test_size = len(target['path'])
+    if verbose:
+        print("[OGVC_vol2] Testing samples:", test_size)   
+    X_test = target['path']
+    y_test = target['emotion']
+    pd.DataFrame({"path": X_test, "emotion": y_test}).to_csv(test_name)
 
 
 def write_custom_csv(emotions=['sad', 'neutral', 'happy'], train_name="train_custom.csv", test_name="test_custom.csv",

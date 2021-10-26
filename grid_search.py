@@ -7,13 +7,18 @@ to edit parameters.py on your need ( e.g remove some parameters for
 faster search )
 """
 
+import os
 import pickle
 
 from emotion_recognition import EmotionRecognizer
-from parameters import classification_grid_parameters, regression_grid_parameters
+from parameters import (classification_grid_parameters,
+                        regression_grid_parameters)
 
 # emotion classes you want to perform grid search on
-emotions = ['sad', 'neutral', 'happy']
+# emotions = ['sad', 'neutral', 'happy']
+# emotions = ['angry', 'sad', 'neutral', 'ps', 'happy']
+emotions = ['angry', 'disgust', 'sad', 'neutral', 'ps', 'happy']
+
 # number of parallel jobs during the grid search
 n_jobs = 4
 
@@ -31,23 +36,28 @@ for model, params in classification_grid_parameters.items():
     print(f"{emotions} {best_estimator.__class__.__name__} achieved {cv_best_score:.3f} cross validation accuracy score!")
 
 print(f"[+] Pickling best classifiers for {emotions}...")
-pickle.dump(best_estimators, open(f"grid/best_classifiers.pickle", "wb"))
 
-best_estimators = []
+dirname = "grid"
+os.makedirs(dirname, exist_ok=True)
 
-for model, params in regression_grid_parameters.items():
-    if model.__class__.__name__ == "KNeighborsRegressor":
-        # in case of a K-Nearest neighbors algorithm
-        # set number of neighbors to the length of emotions
-        params['n_neighbors'] = [len(emotions)]
-    d = EmotionRecognizer(model, emotions=emotions, classification=False)
-    d.load_data()
-    best_estimator, best_params, cv_best_score = d.grid_search(params=params, n_jobs=n_jobs)
-    best_estimators.append((best_estimator, best_params, cv_best_score))
-    print(f"{emotions} {best_estimator.__class__.__name__} achieved {cv_best_score:.3f} cross validation MAE score!")
+emotion_str = "".join([emotion[0].upper() for emotion in sorted(emotions)])
+pickle.dump(best_estimators, open(f"{dirname}/best_classifiers_{emotion_str}.pickle", "wb"))
 
-print(f"[+] Pickling best regressors for {emotions}...")
-pickle.dump(best_estimators, open(f"grid/best_regressors.pickle", "wb"))
+# best_estimators = []
+
+# for model, params in regression_grid_parameters.items():
+#     if model.__class__.__name__ == "KNeighborsRegressor":
+#         # in case of a K-Nearest neighbors algorithm
+#         # set number of neighbors to the length of emotions
+#         params['n_neighbors'] = [len(emotions)]
+#     d = EmotionRecognizer(model, emotions=emotions, classification=False)
+#     d.load_data()
+#     best_estimator, best_params, cv_best_score = d.grid_search(params=params, n_jobs=n_jobs)
+#     best_estimators.append((best_estimator, best_params, cv_best_score))
+#     print(f"{emotions} {best_estimator.__class__.__name__} achieved {cv_best_score:.3f} cross validation MAE score!")
+
+# print(f"[+] Pickling best regressors for {emotions}...")
+# pickle.dump(best_estimators, open(f"grid/best_regressors.pickle", "wb"))
 
 
 
